@@ -6,8 +6,8 @@
 #define HEAP_CAPACITY 39
 
 typedef enum node_type{
-    leaf,
-    intnode
+    LEAF,
+    INT
 } NTYPE;
 
 typedef struct tree_node {
@@ -23,7 +23,7 @@ typedef TNODE DATA;     // data type
 
 typedef struct heap_node { // data element ds for binary heap
   KEYTYPE key;
-  DATA frequency;
+  DATA *node;
 } HNODE;
 
 typedef struct heap {  
@@ -32,6 +32,8 @@ typedef struct heap {
 } HEAP;
 
 HEAP *new_heap();
+void insert_internal(HEAP *heap, TNODE *node1, TNODE *node2);
+void insert_freq(HEAP *heap, char c, int freq);
 void insert(HEAP *heap, HNODE new_node);
 HNODE extract_min(HEAP *heap);
 
@@ -77,8 +79,26 @@ char freq_chars[39] = {
     'z'
 };
 
+void display_tree(TNODE *root, int pretype, int prelen) {
+  if (root) {
+    int i;
+    for (i = 0; i < prelen; i++) {
+      printf("%c", ' ');
+	}
+	if (pretype == 0)
+      printf("%s", "|___:");
+	else if (pretype == 1)
+      printf("%s", "|___L:");
+	else if (pretype == 2) 
+      printf("%s", "|___R:");
+    printf("%c,%d\n", root->val,root->freq);
+    display_tree(root->right, 2, prelen + 4);
+    display_tree(root->left, 1, prelen + 4);
+  }
+}
+
 void count(char c, int counts[HEAP_CAPACITY]){
-    if(isspace(c)){
+    if(isspace(c) && c !='\r'){
         counts[0]++;
     } else if (c == ','){
         counts[1]++;
@@ -95,6 +115,24 @@ void count(char c, int counts[HEAP_CAPACITY]){
             int a = (int) c -'a';
             counts[13+a]++;
         }
+    }
+}
+
+void write_huffman_code(FILE *fp, TNODE *node, char *code){
+    if(node == NULL) return;
+    if(node->type == INT){
+        char *new_code; 
+        int len = strlen(code);
+        new_code = (char*)calloc(len+2, sizeof(char));
+        strcpy(new_code, code);
+        new_code[len] = '0';
+        new_code[len+1] = '\0';
+        write_huffman_code(fp, node->left, new_code);
+        new_code[len] = '1';
+        write_huffman_code(fp, node->right, new_code);
+        free(new_code);
+    } else if(node->type == LEAF){
+        fprintf(fp, "%c:%s\n", node->val, code);
     }
 }
 
@@ -132,6 +170,29 @@ int main(int argc, char *argv[])
         fprintf(freq_out, "%c:%d\n", freq_chars[i], counts[i]);
     }
     fclose(freq_out);
+    //frequency.txt done
+
+    //codes.txt begin
+    HEAP *h = new_heap();
+
+    for(int i = 0; i < HEAP_CAPACITY; i++){
+        insert_freq(h, freq_chars[i], counts[i]);
+    }
+
+    while(h->size > 1){
+        HNODE n1 = extract_min(h);
+        HNODE n2 = extract_min(h);
+        insert_internal(h, n1.node, n2.node);
+    }
+
+    TNODE *huffman_root = extract_min(h).node;
+    display_tree(huffman_root, 0, 0);
+
+    FILE *codes_out = fopen("codes.txt", "w");
+    char *buff = "\0";
+    write_huffman_code(codes_out, huffman_root, buff);
+    fclose(codes_out);
+    //codes.txt done
 
     return 0;
 }
@@ -219,6 +280,36 @@ void insert(HEAP *heap, HNODE new_node)
     heap->size++;
     heapify_up(heap, heap->size-1);
     return;
+}
+
+void insert_internal(HEAP *heap, TNODE *node1, TNODE *node2){
+    TNODE *new_node = (TNODE*)malloc(sizeof(TNODE));
+    int freq = node1->freq + node2->freq;
+    new_node->freq = freq;
+    TNODE *small = (node1->freq < node2->freq)?node1:node2;
+    TNODE *big = (node1->freq > node2->freq)?node1:node2;
+
+    new_node->left = big;
+    new_node->right = small;
+
+    new_node->type = INT;
+    new_node->val = NULL;
+
+    HNODE hnode = {freq, new_node};
+
+    insert(heap, hnode);
+}
+
+void insert_freq(HEAP *heap, char c, int freq){
+    TNODE *new_node = (TNODE*)malloc(sizeof(TNODE));
+    new_node->type = LEAF;
+    new_node->freq = freq;
+    new_node->left = NULL;
+    new_node->right = NULL;
+    new_node->val = c;
+
+    HNODE hnode = {freq, new_node};
+    insert(heap, hnode);
 }
 
 HNODE extract_min(HEAP *heap)
