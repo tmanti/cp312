@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #define HEAP_CAPACITY 39
 
@@ -13,12 +14,12 @@ typedef struct tree_node {
     NTYPE type;
     char val;
     int freq;
-    TNODE *left;
-    TNODE *right;
+    struct tree_node *left;
+    struct tree_node *right;
 } TNODE;
 
-typedef TNODE KEYTYPE;  // key type
-typedef int DATA;     // data type 
+typedef int KEYTYPE;  // key type
+typedef TNODE DATA;     // data type 
 
 typedef struct heap_node { // data element ds for binary heap
   KEYTYPE key;
@@ -27,16 +28,112 @@ typedef struct heap_node { // data element ds for binary heap
 
 typedef struct heap {  
   unsigned int size;     // the current heap size, i.e., heap node count
-  char *hna;  // pointer pointing the heap node array
+  HNODE *hna;  // pointer pointing the heap node array
 } HEAP;
 
 HEAP *new_heap();
 void insert(HEAP *heap, HNODE new_node);
 HNODE extract_min(HEAP *heap);
 
+char freq_chars[39] = {
+    ' ',
+    ',',
+    '.',
+    '0',
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
+    'a',
+    'b',
+    'c',
+    'd',
+    'e',
+    'f',
+    'g',
+    'h',
+    'i',
+    'j',
+    'k',
+    'l',
+    'm',
+    'n',
+    'o',
+    'p',
+    'q',
+    'r',
+    's',
+    't',
+    'u',
+    'v',
+    'w',
+    'x',
+    'y',
+    'z'
+};
+
+void count(char c, int counts[HEAP_CAPACITY]){
+    if(isspace(c)){
+        counts[0]++;
+    } else if (c == ','){
+        counts[1]++;
+    } else if(c == '.'){
+        counts[2]++;
+    } else if(c >= '0' && c <= '9'){
+        int a = (int) c - '0';
+        counts[3 + a]++;
+    } else {
+        if(c >= 'A' && c <= 'Z'){
+            int a = (int) c - 'A';
+            counts[13 + a]++;
+        } else if(c>= 'a' && c<= 'z') {
+            int a = (int) c -'a';
+            counts[13+a]++;
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
+    char ch, file_name[50];
+    FILE *fp;
 
+    if (argc < 2) {
+        printf("Enter name of file you would wish to encode: ");	
+        scanf("%s", file_name);
+	} else {
+        strcpy(file_name, argv[1]);
+    }
+
+    fp = fopen(file_name, "r");
+
+    int counts[HEAP_CAPACITY];
+    for(int i = 0; i<HEAP_CAPACITY; i++){
+        counts[i] = 0;
+    }
+
+    if(fp == NULL){
+        printf("File not available");
+        return -1;
+    }
+    while((ch = fgetc(fp)) != EOF){
+        count(ch, counts);
+    }
+
+    fclose(fp);
+
+    FILE *freq_out = fopen("frequency.txt", "w");
+    for(int i = 0; i < HEAP_CAPACITY; i++){
+        fprintf(freq_out, "%c:%d\n", freq_chars[i], counts[i]);
+    }
+    fclose(freq_out);
+
+    return 0;
 }
 
 int cmp(KEYTYPE a, KEYTYPE b) {
@@ -50,8 +147,8 @@ int cmp(KEYTYPE a, KEYTYPE b) {
     }
 }
 
-void heap_swap(char *a, char *b){
-    char  temp;
+void heap_swap(HNODE *a, HNODE *b){
+    HNODE  temp;
     temp = *a;
     *a   = *b;
     *b   = temp;
