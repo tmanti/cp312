@@ -79,42 +79,34 @@ char freq_chars[39] = {
     'z'
 };
 
-void display_tree(TNODE *root, int pretype, int prelen) {
-  if (root) {
-    int i;
-    for (i = 0; i < prelen; i++) {
-      printf("%c", ' ');
-	}
-	if (pretype == 0)
-      printf("%s", "|___:");
-	else if (pretype == 1)
-      printf("%s", "|___L:");
-	else if (pretype == 2) 
-      printf("%s", "|___R:");
-    printf("%c,%d\n", root->val,root->freq);
-    display_tree(root->right, 2, prelen + 4);
-    display_tree(root->left, 1, prelen + 4);
-  }
-}
+char *huff_codes[HEAP_CAPACITY];
 
-void count(char c, int counts[HEAP_CAPACITY]){
+int get_char_index(char c){
     if(isspace(c) && c !='\r'){
-        counts[0]++;
+        return 0;
     } else if (c == ','){
-        counts[1]++;
+        return 1;
     } else if(c == '.'){
-        counts[2]++;
+        return 2;
     } else if(c >= '0' && c <= '9'){
         int a = (int) c - '0';
-        counts[3 + a]++;
+        return 3+a;
     } else {
         if(c >= 'A' && c <= 'Z'){
             int a = (int) c - 'A';
-            counts[13 + a]++;
+            return 13+a;
         } else if(c>= 'a' && c<= 'z') {
             int a = (int) c -'a';
-            counts[13+a]++;
+            return 13+a;
         }
+    }
+    return -1;
+}
+
+void count(char c, int counts[HEAP_CAPACITY]){
+    int index = get_char_index(c);
+    if(index != -1){
+        counts[index]++;
     }
 }
 
@@ -132,7 +124,11 @@ void write_huffman_code(FILE *fp, TNODE *node, char *code){
         write_huffman_code(fp, node->right, new_code);
         free(new_code);
     } else if(node->type == LEAF){
-        fprintf(fp, "%c:%s\n", node->val, code);
+        char c = node->val;
+        fprintf(fp, "%c:%s\n", c, code);
+        int ind = get_char_index(c);
+        huff_codes[ind] = (char*)malloc((strlen(code)+1)*sizeof(char));
+        strcpy(huff_codes[ind], code);
     }
 }
 
@@ -186,13 +182,45 @@ int main(int argc, char *argv[])
     }
 
     TNODE *huffman_root = extract_min(h).node;
-    display_tree(huffman_root, 0, 0);
+    //display_tree(huffman_root, 0, 0);
 
     FILE *codes_out = fopen("codes.txt", "w");
     char *buff = "\0";
     write_huffman_code(codes_out, huffman_root, buff);
     fclose(codes_out);
     //codes.txt done
+
+    FILE *bin = fopen("compressed.bin", "wb");
+    fp = fopen(file_name, "r");
+    
+    int i = 0;
+    char b = 0;
+    int bits_left = 8;
+    while((ch = fgetc(fp)) != EOF){
+        int index = get_char_index(ch);
+        if(index != -1){
+            char *char_bits = huff_codes[index];
+            //printf("%c(:)%s\n", ch, char_bits);
+            for(int i = 0; i < strlen(char_bits); i++){
+                //printf("%c\n", char_bits[i]);
+                b=((b<<1) | char_bits[i]-'0');
+                bits_left--;
+                if(bits_left == 0){
+                    fputc(b, bin);
+                    b=0;
+                    bits_left=8;
+                }
+            }
+        }
+    }
+
+    /*if(bits_left != 8){
+        b = b << (bits_left-1);
+        fputc(b, bin);
+    }*/
+
+    fclose(fp);
+    fclose(bin);
 
     return 0;
 }
