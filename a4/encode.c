@@ -321,7 +321,6 @@ void insert_internal(HEAP *heap, TNODE *node1, TNODE *node2){
     new_node->right = big;
 
     new_node->type = INT;
-    new_node->val = NULL;
 
     HNODE hnode = {freq, new_node};
 
