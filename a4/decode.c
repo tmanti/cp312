@@ -144,6 +144,7 @@ int main(int argc, char *argv[])
     int i;
     while(!feof(bin)){
         c = fgetc(bin);
+        if(feof(bin)) break;
         for(i = 0; i<8; i++){
             bit = c & mask;
             c = c << 1;
@@ -261,8 +262,8 @@ void insert_internal(HEAP *heap, TNODE *node1, TNODE *node2){
     TNODE *small = (node1->freq < node2->freq)?node1:node2;
     TNODE *big = (node1->freq > node2->freq)?node1:node2;
 
-    new_node->left = big;
-    new_node->right = small;
+    new_node->left = small;
+    new_node->right = big;
 
     new_node->type = INT;
     new_node->val = NULL;

@@ -225,7 +225,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-int cmp(KEYTYPE a, KEYTYPE b) {
+int cmp(KEYTYPE a, KEYTYPE b) { 
     // your implementation
     if(a<b){
         return -1;
@@ -317,8 +317,8 @@ void insert_internal(HEAP *heap, TNODE *node1, TNODE *node2){
     TNODE *small = (node1->freq < node2->freq)?node1:node2;
     TNODE *big = (node1->freq > node2->freq)?node1:node2;
 
-    new_node->left = big;
-    new_node->right = small;
+    new_node->left = small;
+    new_node->right = big;
 
     new_node->type = INT;
     new_node->val = NULL;
