@@ -112,6 +112,7 @@ void count(char c, int counts[HEAP_CAPACITY]){
 
 void write_huffman_code(FILE *fp, TNODE *node, char *code){
     if(node == NULL) return;
+    //printf("%d:%c\n", node->freq, node->val);
     if(node->type == INT){
         char *new_code; 
         int len = strlen(code);
@@ -172,12 +173,18 @@ int main(int argc, char *argv[])
     HEAP *h = new_heap();
 
     for(int i = 0; i < HEAP_CAPACITY; i++){
+        //if(counts[i] != 0){
+            //printf("char: %c, counts:%d\n", freq_chars[i], counts[i]);
         insert_freq(h, freq_chars[i], counts[i]);
+        //}
     }
 
     while(h->size > 1){
         HNODE n1 = extract_min(h);
+        //printf("node 1 extract: %c\n", n1.node->val);
         HNODE n2 = extract_min(h);
+        //printf("node 1 extract: %c\n", n2.node->val);
+        //printf("new freq: %d\n", n1.node->freq+n2.node->freq);
         insert_internal(h, n1.node, n2.node);
     }
 
@@ -189,6 +196,8 @@ int main(int argc, char *argv[])
     write_huffman_code(codes_out, huffman_root, buff);
     fclose(codes_out);
     //codes.txt done
+
+    //return 0;
 
     FILE *bin = fopen("compressed.bin", "wb");
     fp = fopen(file_name, "r");
@@ -314,8 +323,10 @@ void insert_internal(HEAP *heap, TNODE *node1, TNODE *node2){
     TNODE *new_node = (TNODE*)malloc(sizeof(TNODE));
     int freq = node1->freq + node2->freq;
     new_node->freq = freq;
-    TNODE *small = (node1->freq < node2->freq)?node1:node2;
+    TNODE *small = (node1->freq <= node2->freq)?node1:node2;
     TNODE *big = (node1->freq > node2->freq)?node1:node2;
+    //printf("%c:%d\n", small->val, small->freq);
+    //printf("%c:%d\n", small->val, small->freq);
 
     new_node->left = small;
     new_node->right = big;
